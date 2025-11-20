@@ -19,7 +19,7 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
       - name: Sync repos
-        uses: Vova-SH/sync-upstream-repo@1.0.3
+        uses: Vova-SH/sync-upstream-repo@1.0.5
         with:
           upstream_repo: ${{ env.CORE_REPO }}
           token: ${{ env.TOKEN }}

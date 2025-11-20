@@ -1,5 +1,7 @@
 plugins {
+    composeCompiler
     kotlinAndroid
+    kotlinSerialization version Version.Kotlin.language
     androidApplication
 }
 
@@ -19,6 +21,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    buildFeatures.compose = true
     buildFeatures.viewBinding = true
 
     compileOptions {
@@ -32,6 +35,17 @@ android {
 }
 
 dependencies {
-    defaultLibrary()
-
+    defaultComposeLibrary()
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
+    implementation("androidx.navigation:navigation-compose:2.9.6")
+    val coil = "3.3.0"
+    implementation("io.coil-kt.coil3:coil-compose:$coil")
+    implementation("io.coil-kt.coil3:coil-network-ktor3:$coil")
+    val ktor = "3.3.1"
+    implementation("io.ktor:ktor-client-core:$ktor")
+    implementation("io.ktor:ktor-client-cio:$ktor")
+    implementation("io.ktor:ktor-client-content-negotiation:$ktor")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 }
