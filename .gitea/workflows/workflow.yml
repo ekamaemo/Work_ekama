@@ -1,0 +1,82 @@
+name: Android Test
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-and-test:
+    runs-on: android
+    steps:
+      - name: Check ANDROID_SERIAL is set
+        run: |
+          if [ -z "$ANDROID_SERIAL" ]; then
+            echo "❌ Ошибка: Переменная окружения ANDROID_SERIAL не установлена."
+            exit 1
+          fi
+          echo "✅ Переменная ANDROID_SERIAL установлена: $ANDROID_SERIAL"
+
+      - name: Check ADB device is connected
+        run: |
+          command -v adb >/dev/null 2>&1 || { echo "❌ Ошибка: adb не найден в PATH." >&2; exit 1; }
+
+          connected_devices=$(adb devices | grep -c "$ANDROID_SERIAL.*device$")
+
+          if [ "$connected_devices" -ne 1 ]; then
+            echo "❌ Ошибка: Устройство с серийным номером $ANDROID_SERIAL не подключено или не доступно."
+            echo "Доступные устройства:"
+            adb devices
+            exit 1
+          fi
+          echo "✅ Устройство с серийным номером $ANDROID_SERIAL подключено и готово к использованию."
+
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Validate allowed changes
+        run: |
+          python3 /opt/scripts/validate-changes.py
+        env:
+          GITEA_REPOSITORY: ${{ gitea.repository }}
+          GITEA_BASE_REF: ${{ gitea.event.pull_request.base.ref }}
+          GITEA_HEAD_REF: ${{ gitea.event.pull_request.head.ref }}
+
+      - name: Checkout tests
+        run: python3 /opt/scripts/copy-tests.py --repo-url "Olympic/NTO-2025-Android-TeamTask-tests" --branch "main"
+
+      - name: Uninstall APK before tests (Gradle)
+        run: |
+          chmod +x ./gradlew
+          ./gradlew uninstallAll
+
+      - name: Run tests
+        run: |
+          chmod +x ./gradlew
+          ./gradlew connectedDebugAndroidTest
+
+      - name: Uninstall APK after tests (Gradle)
+        run: |
+          chmod +x ./gradlew
+          ./gradlew uninstallAll
+        if: always()
+
+      - name: Upload test results
+        uses: christopherHX/gitea-upload-artifact@v4
+        with:
+          name: test-results
+          path: app/build/outputs/androidTest-results/connected
+          if-no-files-found: ignore
+          retention-days: 30
+        if: always()
+
+      - name: Upload test reports
+        uses: christopherHX/gitea-upload-artifact@v4
+        with:
+          name: test-reports
+          path: app/build/reports/androidTests/connected
+          if-no-files-found: ignore
+          retention-days: 30
+        if: always()
