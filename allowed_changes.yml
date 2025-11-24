@@ -1,0 +1,8 @@
+version: 1
+allowed_files:
+  - "app/src/main/java/ru/myitschool/work/*"
+  - "app/src/main/res/*"
+forbidden_files:
+  - "app/src/main/java/ru/myitschool/work/App.kt"
+  - "app/src/main/java/ru/myitschool/work/core/Constants.kt"
+  - "app/src/main/java/ru/myitschool/work/core/TestIds.kt"
