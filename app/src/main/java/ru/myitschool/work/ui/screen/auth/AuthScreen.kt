@@ -30,18 +30,26 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import ru.myitschool.work.R
 import ru.myitschool.work.core.TestIds
+import ru.myitschool.work.ui.nav.AuthScreenDestination
 import ru.myitschool.work.ui.nav.MainScreenDestination
 
 @Composable
 fun AuthScreen(
-    viewModel: AuthViewModel = viewModel(),
+    viewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory()),
     navController: NavController
 ) {
     val state by viewModel.uiState.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.actionFlow.collect {
-            navController.navigate(MainScreenDestination)
+        viewModel.actionFlow.collect { action ->
+            when (action) {
+                is AuthAction.NavigateToMain -> {
+                    navController.navigate(MainScreenDestination) {
+                        popUpTo(AuthScreenDestination) { inclusive = true }
+                    }
+                }
+            }
         }
     }
 
@@ -57,32 +65,58 @@ fun AuthScreen(
             style = MaterialTheme.typography.headlineSmall,
             textAlign = TextAlign.Center
         )
+
+        Spacer(modifier = Modifier.size(16.dp))
+
         when (val currentState = state) {
-            is AuthState.Data -> Content(viewModel, currentState)
+            is AuthState.Data -> {
+                AuthContent(
+                    viewModel = viewModel,
+                    state = currentState,
+                    errorMessage = errorMessage
+                )
+            }
             is AuthState.Loading -> {
                 CircularProgressIndicator(
                     modifier = Modifier.size(64.dp)
                 )
             }
+
+            else -> {}
         }
     }
 }
 
 @Composable
-private fun Content(
+private fun AuthContent(
     viewModel: AuthViewModel,
-    state: AuthState.Data
+    state: AuthState.Data,
+    errorMessage: String?
 ) {
-    var inputText by remember { mutableStateOf("") }
-    Spacer(modifier = Modifier.size(16.dp))
+    var inputText by remember { mutableStateOf(state.inputText) }
+
     TextField(
         modifier = Modifier.testTag(TestIds.Auth.CODE_INPUT).fillMaxWidth(),
         value = inputText,
         onValueChange = {
-            inputText = it
-            viewModel.onIntent(AuthIntent.TextInput(it))
+            val filtered = it
+                .filter { char -> char.isLetterOrDigit() }
+                .take(4)
+                .uppercase()
+            inputText = filtered
+            viewModel.onIntent(AuthIntent.TextInput(filtered))
         },
-        label = { Text(stringResource(R.string.auth_label)) }
+        label = { Text(stringResource(R.string.auth_label)) },
+        isError = errorMessage != null,
+        supportingText = {
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        },
+        singleLine = true
     )
     Spacer(modifier = Modifier.size(16.dp))
     Button(
@@ -90,7 +124,7 @@ private fun Content(
         onClick = {
             viewModel.onIntent(AuthIntent.Send(inputText))
         },
-        enabled = true
+        enabled = inputText.length == 4 && errorMessage == null
     ) {
         Text(stringResource(R.string.auth_sign_in))
     }

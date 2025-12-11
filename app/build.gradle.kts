@@ -35,6 +35,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.compose.foundation:foundation:1.9.5")
     defaultComposeLibrary()
     implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
